@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import json
-import sqlite3
+# import sqlite3
+import pymysql
 
 app = Flask(__name__)
 
@@ -8,8 +9,8 @@ app = Flask(__name__)
 def db_connection():
     conn = None
     try:
-        conn = sqlite3.connect('books.sqlite')
-    except sqlite3.Error as e:
+        conn = pymysql.connect('books.sqlite')
+    except pymysql.Error as e:
         print(e)
     return conn
 
@@ -22,7 +23,9 @@ def get_books():
     if request.method == 'GET':
         cursor.execute("SELECT * FROM book")
         books = [
-            dict(id=row[0], author=row[1], language=row[2], title=row[3])
+            # dict(id=row[0], author=row[1], language=row[2], title=row[3])
+            dict(id=row['id'], author=row['author'],
+                 language=row['language'], title=row['title'])
             for row in cursor.fetchall()
         ]
 
@@ -34,7 +37,8 @@ def get_books():
         new_lang = request.form['language']
         new_title = request.form['title']
 
-        sql = """INSERT INTO book (author, language, title) VALUES (?, ?, ?)"""
+        # sql = """INSERT INTO book (author, language, title) VALUES (?, ?, ?)"""
+        sql = """INSERT INTO book (author, language, title) VALUES (%s, %s, %s)"""
 
         cursor.execute(sql, (new_author, new_lang, new_title))
         conn.commit()
@@ -52,6 +56,8 @@ def single_book(id):
         rows = cursor.fetchall()
         for r in rows:
             book = dict(id=r[0], author=r[1], language=r[2], title=r[3])
+            # book = dict(id=r['id'], author=r['author'],
+            #             language=r['language'], title=r['title'])
         if book is not None:
             return jsonify(book), 200
         else:
